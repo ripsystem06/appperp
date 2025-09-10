@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ERP — Bordado</title>
+  <style>
+    :root { --bg:#f6f7f9; --card:#fff; --border:#e5e7eb; --muted:#6b7280; --fg:#111827; --colbg:#fafafa; --accent:#111827; }
+    *{ box-sizing:border-box; font-family: system-ui, Arial; color:var(--fg); }
+    body{ margin:0; background:var(--bg); }
+    .bar{ display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#fff; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; }
+    .btn{ border:1px solid var(--border); background:#fff; border-radius:10px; padding:8px 12px; cursor:pointer; }
+    .content{ padding:16px; max-width:1200px; margin:0 auto; }
+    .grid{ display:grid; grid-template-columns: repeat(3, minmax(260px, 1fr)); gap:14px; }
+    @media (max-width: 900px){ .grid{ grid-template-columns: 1fr; } }
+    .col{ background:var(--colbg); border:1px solid var(--border); border-radius:14px; padding:10px; min-height:300px; }
+    .col h3{ font-size:14px; margin:4px 4px 10px; color:#374151; display:flex; justify-content:space-between; }
+    .dropzone{ min-height:240px; display:flex; flex-direction:column; gap:8px; }
+    .card{ background:#fff; border:1px solid var(--border); border-radius:12px; padding:10px; }
+    .pill{ border:1px solid var(--border); border-radius:999px; padding:2px 8px; font-size:11px; color:#374151; }
+    dialog{ width:400px; max-width:95vw; border:1px solid var(--border); border-radius:16px; padding:0; }
+    dialog::backdrop{ background:rgba(0,0,0,.2); }
+    .modal-head,.modal-foot{ padding:12px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+    .modal-foot{ border-top:1px solid var(--border); border-bottom:none; }
+    .modal-body{ padding:16px; display:grid; gap:12px; }
+    label{ font-size:12px; color:#374151; display:block; }
+    input{ width:100%; padding:10px; border:1px solid var(--border); border-radius:10px; margin-top:6px; }
+    .error{ color:#b91c1c; font-size:13px; min-height:18px; }
+    .muted{ color:#6b7280; font-size:12px; }
+  </style>
+</head>
+<body>
+  <header class="bar">
+    <div><strong>Bordado</strong></div>
+    <div>
+      <button class="btn" onclick="location.href='dashboard.html'">Dashboard</button>
+      <button class="btn" onclick="localStorage.clear();location.href='index.html'">Salir</button>
+    </div>
+  </header>
+
+  <main class="content">
+    <section class="grid">
+      <div class="col" data-state="APROBADA">
+        <h3>Aprobadas <span id="c-APROBADA">0</span></h3>
+        <div class="dropzone" id="col-APROBADA"></div>
+      </div>
+      <div class="col" data-state="EN_PRODUCCION">
+        <h3>En producción <span id="c-EN_PRODUCCION">0</span></h3>
+        <div class="dropzone" id="col-EN_PRODUCCION"></div>
+      </div>
+      <div class="col" data-state="TERMINADA">
+        <h3>Terminadas <span id="c-TERMINADA">0</span></h3>
+        <div class="dropzone" id="col-TERMINADA"></div>
+      </div>
+    </section>
+    <p class="muted" id="msg"></p>
+  </main>
+
+  <!-- Modal puntadas -->
+  <dialog id="dlg">
+    <div class="modal-head">
+      <strong>Registrar puntadas</strong>
+      <button class="btn" id="btnClose">Cerrar</button>
+    </div>
+    <div class="modal-body">
+      <input id="orderId" type="hidden" />
+      <label>Puntadas reales
+        <input id="puntadas" type="number" min="0" step="1" placeholder="0" />
+      </label>
+      <div class="error" id="formMsg"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="btnCancel">Cancelar</button>
+      <button class="btn" id="btnSave">Guardar</button>
+    </div>
+  </dialog>
+
+  <script>
+    // ⬇ Reemplaza por tu URL si vuelves a desplegar:
+    const API_BASE="https://script.google.com/macros/s/AKfycbzmonJNOP5QoXCNdoIoKMzFZNZV4Y7AhXHGILqZxx3AMpu9Ueno2U9uvjM1HCgRgfhMdw/exec";
+
+    function guard(){
+      const rol=localStorage.getItem("erp_rol");
+      if(!rol){ location.href="index.html"; return null; }
+      if(!["BORDADO","ADMIN"].includes(rol)){ location.href="dashboard.html"; return null; }
+      return true;
+    }
+    async function apiPost(path, payload){
+      const res = await fetch(API_BASE+"?path="+encodeURIComponent(path),{
+        method:"POST",
+        headers:{ "Content-Type":"text/plain" },
+        body: JSON.stringify(payload||{})
+      });
+      return res.json();
+    }
+
+    const cols={
+      APROBADA:document.getElementById("col-APROBADA"),
+      EN_PRODUCCION:document.getElementById("col-EN_PRODUCCION"),
+      TERMINADA:document.getElementById("col-TERMINADA")
+    };
+    const counts={
+      APROBADA:document.getElementById("c-APROBADA"),
+      EN_PRODUCCION:document.getElementById("c-EN_PRODUCCION"),
+      TERMINADA:document.getElementById("c-TERMINADA")
+    };
+    const msg=document.getElementById("msg");
+
+    function card(o){
+      return `<div class="card" draggable="true" data-id="${o.id}">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <b>${o.codigo||""}</b><span class="pill">${o.prioridad||"NORMAL"}</span>
+        </div>
+        <div>${o.diseno||""} / ${o.prenda||""}</div>
+        <div class="muted">${o.cliente||""}</div>
+        <div style="margin-top:6px;display:flex;gap:6px;">
+          <button class="btn" data-metric="${o.id}">Puntadas</button>
+        </div>
+      </div>`;
+    }
+
+    function bindDnD(){
+      document.querySelectorAll(".card").forEach(el=>{
+        el.addEventListener("dragstart", e=>{
+          e.dataTransfer.setData("text/plain", el.dataset.id);
+        });
+      });
+      document.querySelectorAll(".dropzone").forEach(zone=>{
+        zone.addEventListener("dragover", e=> e.preventDefault());
+        zone.addEventListener("drop", async e=>{
+          e.preventDefault();
+          const id=e.dataTransfer.getData("text/plain");
+          const estado=zone.parentElement.getAttribute("data-state");
+          const res=await apiPost("update",{ id, fields:{ estado }});
+          if(res.ok) load();
+          else msg.textContent=res.error||"No se pudo mover";
+        });
+      });
+    }
+
+    function bindMetricButtons(){
+      document.querySelectorAll("[data-metric]").forEach(btn=>{
+        btn.onclick=()=>{
+          document.getElementById("orderId").value = btn.dataset.metric;
+          document.getElementById("puntadas").value = "";
+          document.getElementById("dlg").showModal();
+        };
+      });
+    }
+
+    async function saveMetric(){
+      const orderId = document.getElementById("orderId").value;
+      const puntadas = parseInt(document.getElementById("puntadas").value||"0",10);
+      const formMsg = document.getElementById("formMsg");
+      formMsg.textContent = "";
+      const res = await apiPost("embroidery",{ orderId, puntadasReales: puntadas });
+      if(res.ok){
+        document.getElementById("dlg").close();
+      }else{
+        formMsg.textContent = res.error || "No se pudo guardar";
+      }
+    }
+
+    async function load(){
+      msg.textContent="";
+      Object.keys(cols).forEach(k=>{ cols[k].innerHTML=""; counts[k].textContent="0"; });
+
+      const all = await apiPost("orders",{});
+      if(!all.ok){ msg.textContent=all.error||"Error al cargar"; return; }
+
+      const items = all.items.filter(o=> (o.departamento||"") === "BORDADO");
+      const grouped = { APROBADA:[], EN_PRODUCCION:[], TERMINADA:[] };
+      items.forEach(o=> (grouped[o.estado]||grouped.APROBADA).push(o));
+
+      Object.keys(grouped).forEach(k=>{
+        cols[k].innerHTML = grouped[k].map(card).join("");
+        counts[k].textContent = grouped[k].length;
+      });
+
+      bindDnD();
+      bindMetricButtons();
+    }
+
+    document.getElementById("btnClose").onclick=()=>document.getElementById("dlg").close();
+    document.getElementById("btnCancel").onclick=()=>document.getElementById("dlg").close();
+    document.getElementById("btnSave").onclick=saveMetric;
+
+    if(guard()) load();
+  </script>
+</body>
+</html>
