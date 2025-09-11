@@ -1,0 +1,342 @@
+/*
+  ============================================
+  ERP Global Stylesheet
+  ============================================
+  Descripción: Estilos centralizados para todas las vistas del ERP.
+*/
+
+/* Paleta de colores principal */
+:root {
+  --black: #000000;
+  --true-blue: #3066BE;
+  --argentinian-blue: #60AFFF;
+  --deep-sky-blue: #28C2FF;
+  --white: #FFFFFF;
+
+  /* Asignación de colores a variables de tema */
+  --bg-main: #f4f7fa; /* Fondo general ligeramente azulado */
+  --card-bg: var(--white);
+  --text-primary: #111827; /* Un negro suave para texto */
+  --text-muted: #6b7280;
+  --accent-primary: var(--true-blue);
+  --accent-secondary: var(--argentinian-blue);
+  --border-color: #e5e7eb;
+  --col-bg: #f9fafb;
+}
+
+/* Reseteo y estilos base */
+* {
+  box-sizing: border-box;
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-main);
+  line-height: 1.5;
+}
+
+/*
+  ============================================
+  Componentes Comunes
+  ============================================
+*/
+
+/* Barra de navegación (Header) */
+.header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.header-bar .logo-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-bar .logo-container img {
+  height: 40px;
+}
+
+.header-bar .logo-container strong {
+  font-size: 1.1em;
+  font-weight: 600;
+}
+
+.header-bar .user-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Botones */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn:hover {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.btn.primary {
+  background-color: var(--accent-primary);
+  color: var(--white);
+  border-color: var(--accent-primary);
+}
+
+.btn.primary:hover {
+  background-color: #2957a3; /* Un poco más oscuro que true-blue */
+  border-color: #2957a3;
+}
+
+/* Contenedor principal */
+.main-content {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Estilos de Tarjetas (Kanban, Stats, etc.) */
+.card, .stat-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+/*
+  ============================================
+  Estilos Específicos de Páginas
+  ============================================
+*/
+
+/* --- Página de Login --- */
+.login-page-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 16px;
+}
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  padding: 32px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  text-align: center;
+}
+.login-card .logo-container {
+  justify-content: center;
+  margin-bottom: 24px;
+}
+.login-card h1 {
+  margin: 0 0 4px 0;
+  font-size: 24px;
+}
+.login-card p.sub {
+  margin: 0 0 24px 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.login-card label {
+  display: block;
+  font-size: 12px;
+  color: #374151;
+  margin-top: 16px;
+  text-align: left;
+  font-weight: 600;
+}
+.login-card input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-top: 6px;
+  font-size: 14px;
+  outline: none;
+}
+.login-card input:focus {
+  border-color: var(--argentinian-blue);
+  box-shadow: 0 0 0 3px rgba(96, 175, 255, 0.3);
+}
+.login-card button {
+  width: 100%;
+  margin-top: 24px;
+  font-size: 16px;
+}
+
+/* --- Kanban (Vendedor, Coordinación, etc.) --- */
+.kanban-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(280px, 1fr));
+  gap: 20px;
+  align-items: flex-start;
+}
+@media (max-width: 1200px) { .kanban-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 768px) { .kanban-grid { grid-template-columns: 1fr; } }
+
+.kanban-col {
+  background-color: var(--col-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px;
+}
+.kanban-col h3 {
+  font-size: 16px;
+  margin: 4px 4px 12px;
+  color: #374151;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+}
+.dropzone {
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kanban-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-left: 5px solid var(--accent-secondary);
+  border-radius: 8px;
+  padding: 12px;
+  cursor: grab;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  transition: box-shadow 0.2s;
+}
+.kanban-card:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+}
+.kanban-card.urgent {
+  border-left-color: #ef4444; /* Rojo para Urgente */
+}
+
+/* --- Dashboards --- */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+.stat-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #374151;
+  margin-bottom: 8px;
+}
+.stat-big {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--accent-primary);
+}
+.chart-container {
+  position: relative;
+  height: 300px;
+}
+
+/*
+  ============================================
+  Utilidades y Clases Misceláneas
+  ============================================
+*/
+.muted { color: var(--text-muted); font-size: 12px; }
+.pill {
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+  background-color: #f3f4f6;
+}
+.error { color: #dc2626; font-size: 13px; min-height: 18px; margin-top: 10px; }
+.success { color: #16a34a; font-size: 13px; min-height: 18px; margin-top: 10px; }
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--white);
+  border-right-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin .6s linear infinite;
+  vertical-align: -3px;
+  margin-right: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Estilos de Modales */
+dialog {
+  width: 560px;
+  max-width: 95vw;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 0;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+dialog::backdrop {
+  background: rgba(0,0,0,0.3);
+  backdrop-filter: blur(2px);
+}
+.modal-head {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 18px;
+  font-weight: 600;
+}
+.modal-body {
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.modal-foot {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+th, td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+}
+th {
+  color: #374151;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  font-weight: 600;
+}
