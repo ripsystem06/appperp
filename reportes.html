@@ -5,23 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ERP — Reportes de Producción</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    :root { --bg:#f6f7f9; --card:#fff; --border:#e5e7eb; --muted:#6b7280; --fg:#111827; --accent:#111827; }
-    *{ box-sizing:border-box; font-family: system-ui, Arial; color:var(--fg); }
-    body{ margin:0; background:var(--bg); }
-    .bar{ display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#fff; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; }
-    .btn{ border:1px solid var(--border); background:#fff; border-radius:10px; padding:8px 12px; cursor:pointer; text-decoration: none; }
-    .content{ padding:16px; max-width:1100px; margin:0 auto; display:grid; gap:24px; }
-    .card{ background:#fff; border:1px solid var(--border); border-radius:14px; padding:16px; }
-    .title{ font-weight:700; margin-bottom:12px; font-size:16px; color:#374151; }
-    .muted{ color:var(--muted); font-size:12px; }
-    .report-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    @media (max-width: 768px) { .report-grid { grid-template-columns: 1fr; } }
-    table{ width:100%; border-collapse: collapse; font-size:14px; }
-    th,td{ padding:8px 10px; border-bottom:1px solid var(--border); text-align:left; }
-    th{ color:#374151; font-size:12px; text-transform: uppercase; letter-spacing:.04em; }
-    .chart-container { position: relative; height: 300px; }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="bar">
@@ -129,4 +113,5 @@
   </script>
 </body>
 </html>
+
 
