@@ -68,7 +68,7 @@
 
     function generateNavLinks(rol) {
       const container = document.getElementById('nav-links');
-      let links = `<a href="https://docs.google.com/forms/d/e/1FAIpQLSc_Your_Form_ID/viewform" target="_blank" class="btn">Solicitar Cotización</a>`;
+      let links = <a href="https://forms.gle/ExmgYXjWDhFijNPq5" target="_blank" class="btn">Solicitar Cotización</a>;
       links += `<button class="btn" id="btnRefresh">Actualizar</button>`;
       links += `<button class="btn primary" id="btnNew">Nueva orden</button>`;
       if (rol === 'ADMIN') {
@@ -161,4 +161,5 @@
   </script>
 </body>
 </html>
+
 
