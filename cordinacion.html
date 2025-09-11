@@ -32,10 +32,20 @@
     <div class="modal-head"><strong>Editar / Aprobar Orden</strong><button class="btn" onclick="this.closest('dialog').close()">Cerrar</button></div>
     <form class="modal-body" id="form">
       <input type="hidden" name="id" />
-      <div class="form-group"><label>Fecha compromiso<input type="date" name="fechaCompromiso" /></label></div>
+      <div class="form-group">
+        <label>Fecha Estimada (Vendedor)</label>
+        <p id="infoFechaEstimada" style="padding: 10px; background-color: #f3f4f6; border-radius: 8px; margin-top: 0; font-weight: 600;"></p>
+      </div>
+      <div class="form-group">
+        <label>Fecha Compromiso (Aprobar/Modificar)</label>
+        <input type="date" name="fechaCompromiso" />
+      </div>
       <div class="form-group"><label>Prioridad<select name="prioridad"><option value="NORMAL">Normal</option><option value="URGENTE">Urgente</option></select></label></div>
       <div class="form-group"><label>Departamento<select name="departamento"><option value="NINGUNO">Ninguno</option><option value="BORDADO">Bordado</option><option value="DTF">DTF</option></select></label></div>
-      <div class="form-group"><label>Estado<select name="estado"><option value="SOLICITADA">Solicitada</option><option value="APROBADA">Aprobada</option><option value="EN_PRODUCCION">En producción</option><option value="TERMINADA">Terminada</option></select></label></div>
+      <div class="form-group full-width">
+        <label>Estado</label>
+        <select name="estado"><option value="SOLICITADA">Solicitada</option><option value="APROBADA">Aprobada</option><option value="EN_PRODUCCION">En producción</option><option value="TERMINADA">Terminada</option></select>
+      </div>
       <div class="form-group full-width"><div class="error" id="formMsg"></div></div>
     </form>
     <div class="modal-foot"><button class="btn" id="btnCancel">Cancelar</button><button class="btn primary" id="btnSave">Guardar Cambios</button></div>
@@ -81,7 +91,21 @@
     STATES.forEach(s=>{ cols[s]=document.getElementById("col-"+s); counts[s]=document.getElementById("c-"+s);});
     const msg=document.getElementById("msg");
 
-    function cardTemplate(o){ return `<div class="kanban-card ${o.prioridad === 'URGENTE' ? 'urgent' : ''}" draggable="true" data-id="${o.id}"><div style="display:flex; justify-content:space-between; align-items:center;"><b>${o.codigo||""}</b><span class="pill">${o.prioridad||"NORMAL"}</span></div><div>${o.diseno||""} / ${o.prenda||""}</div><div class="muted">${o.cliente||""}<br><small>${o.vendedorEmail||""}</small></div><div style="margin-top:8px;"><button class="btn" data-edit="${o.id}" style="width:100%;">Editar</button></div></div>`; }
+    function cardTemplate(o){ 
+      const fechaEst = (o.fechaEstimada || "").split('T')[0] || 'N/A';
+      return `<div class="kanban-card ${o.prioridad === 'URGENTE' ? 'urgent' : ''}" draggable="true" data-id="${o.id}">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <b>${o.codigo||""}</b>
+          <span class="pill">${o.prioridad||"NORMAL"}</span>
+        </div>
+        <div>${o.diseno||""} / ${o.prenda||""}</div>
+        <div class="muted">${o.cliente||""}<br><small>${o.vendedorEmail||""}</small></div>
+        <div class="muted" style="margin-top: 4px; font-weight: 600;">Fecha Est: ${fechaEst}</div>
+        <div style="margin-top:8px;">
+          <button class="btn" data-edit="${o.id}" style="width:100%;">Editar</button>
+        </div>
+      </div>`;
+    }
 
     function bindDnD(){
       document.querySelectorAll(".kanban-card").forEach(el=> el.addEventListener("dragstart",e=> e.dataTransfer.setData("text/plain", el.dataset.id)));
@@ -118,7 +142,25 @@
     }
 
     const dlg=document.getElementById("dlg"), form=document.getElementById("form"), formMsg=document.getElementById("formMsg");
-    function openDialog(o){ form.reset(); formMsg.textContent=""; form.id.value=o.id; form.fechaCompromiso.value=(o.fechaCompromiso || "").split('T')[0]; form.prioridad.value=o.prioridad||"NORMAL"; form.departamento.value=o.departamento||"NINGUNO"; form.estado.value=o.estado||"SOLICITADA"; dlg.showModal(); }
+    function openDialog(o){ 
+      form.reset(); 
+      formMsg.textContent=""; 
+      form.id.value=o.id;
+      
+      const fechaEstimadaStr = (o.fechaEstimada || "").split('T')[0];
+      const fechaCompromisoStr = (o.fechaCompromiso || "").split('T')[0];
+      
+      // Mostrar la fecha estimada del vendedor
+      document.getElementById("infoFechaEstimada").textContent = fechaEstimadaStr || 'No especificada';
+      
+      // Pre-llenar la fecha compromiso: si ya existe, usarla. Si no, usar la estimada como sugerencia.
+      form.fechaCompromiso.value = fechaCompromisoStr || fechaEstimadaStr;
+      
+      form.prioridad.value=o.prioridad||"NORMAL"; 
+      form.departamento.value=o.departamento||"NINGUNO"; 
+      form.estado.value=o.estado||"SOLICITADA"; 
+      dlg.showModal(); 
+    }
     
     async function saveDialog(e){
       e.preventDefault(); formMsg.textContent="";
@@ -126,7 +168,7 @@
       try {
         const r=await apiJsonp("update",{ id: form.id.value, fields });
         if(r.ok){ dlg.close(); load(); } else formMsg.textContent=r.error||"No se pudo guardar.";
-      } catch (err) { formMsg.textContent = "Error de red al guardar."}
+      } catch (err) { msg.textContent = "Error de red al guardar."}
     }
 
     document.addEventListener('DOMContentLoaded', () => {
