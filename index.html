@@ -17,9 +17,19 @@
     button { width:100%; padding:10px 12px; margin-top:14px; border-radius:10px; border:0; background:var(--accent); color:white; font-weight:600; cursor:pointer; }
     button[disabled] { opacity:.7; cursor:not-allowed; }
     .error { color:#b91c1c; font-size:13px; min-height:18px; margin-top:10px; }
-    .hint, .footer { text-align:center; font-size:12px; color:var(--muted); margin-top:12px; }
+    .success { color:#059669; font-size:13px; min-height:18px; margin-top:10px; }
+    .hint { text-align:center; font-size:12px; color:var(--muted); margin-top:12px; }
+    .hint a { color: var(--accent); text-decoration: none; font-weight: 500; } .hint a:hover { text-decoration: underline; }
     .spinner { width:16px; height:16px; border:2px solid #fff; border-right-color: transparent; border-radius:50%; display:inline-block; animation: spin .6s linear infinite; vertical-align: -3px; margin-right:6px; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    /* Estilos del Modal */
+    dialog{ width:400px; max-width:95vw; border:1px solid var(--border); border-radius:16px; padding:0; box-shadow: 0 10px 30px rgba(0,0,0,.1); }
+    dialog::backdrop{ background:rgba(0,0,0,.2); backdrop-filter: blur(2px); }
+    .modal-head,.modal-foot{ padding:12px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+    .modal-foot{ border-top:1px solid var(--border); border-bottom:none; justify-content:flex-end; gap:8px;}
+    .modal-body{ padding:16px; }
+    .btn-modal{ border:1px solid var(--border); background:#fff; border-radius:10px; padding:8px 12px; cursor:pointer; }
+    .btn-modal.primary{ background:var(--accent); color:#fff; border-color:var(--accent); }
   </style>
 </head>
 <body>
@@ -35,53 +45,105 @@
 
     <button id="btnLogin">Entrar</button>
     <div id="msg" class="error"></div>
+    <div id="successMsg" class="success"></div>
 
-    <p class="hint">Si no tienes cuenta, solicita tu registro con administración.</p>
-    <div class="footer">Tu sesión se valida contra Google Sheets</div>
+    <!-- NUEVO: Enlace para solicitar registro -->
+    <p class="hint">¿No tienes cuenta? <a href="#" id="btnRequestAccess">Solicita tu registro</a>.</p>
   </div>
 
-  <script>
-    // === Config ===
-    const API_BASE = "https://script.google.com/macros/s/AKfycbztopO7xwjrM_12xB7koAEiXw469zu4ED2ZcXbmvi55Rj-ALHka5A6nNOZmTaseNqb9_w/exec";
+  <!-- NUEVO: Modal para solicitar registro -->
+  <dialog id="dlgRequest">
+    <div class="modal-head"><strong>Solicitar Acceso</strong></div>
+    <div class="modal-body">
+      <p class="sub" style="margin:0 0 12px;">Completa tus datos. Administración revisará tu solicitud.</p>
+      <label for="reqName">Nombre completo</label>
+      <input id="reqName" type="text" required />
+      <label for="reqEmail">Email</label>
+      <input id="reqEmail" type="email" required />
+      <label for="reqPass">Contraseña (temporal)</label>
+      <input id="reqPass" type="password" required />
+      <div id="reqMsg" class="error"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-modal" id="btnCancelRequest">Cancelar</button>
+      <button class="btn-modal primary" id="btnSendRequest">Enviar Solicitud</button>
+    </div>
+  </dialog>
 
-    // === JSONP helper (evita CORS en GitHub Pages) ===
-    function jsonp(path, payload = {}, timeoutMs = 120000) {
-      return new Promise((resolve, reject) => {
-        const cbName = "__jsonp_cb_" + Math.random().toString(36).slice(2);
-        const timer = setTimeout(() => { cleanup(); reject(new Error("JSONP timeout")); }, timeoutMs);
-        function cleanup(){ clearTimeout(timer); delete window[cbName]; script?.parentNode?.removeChild(script); }
-        window[cbName] = (data) => { cleanup(); resolve(data); };
-        const qs = new URLSearchParams({ path, callback: cbName, payload: JSON.stringify(payload) });
-        const script = document.createElement("script");
-        script.src = API_BASE + "?" + qs.toString();
-        script.onerror = () => { cleanup(); reject(new Error("JSONP network error")); };
-        document.head.appendChild(script);
+
+  <script>
+    const API_BASE = "https://script.google.com/macros/s/AKfycbzmonJNOP5QoXCNdoIoKMzFZNZV4Y7AhXHGILqZxx3AMpu9Ueno2U9uvjM1HCgRgfhMdw/exec";
+    const $ = s => document.querySelector(s);
+    const btnLogin = $("#btnLogin"), email = $("#email"), password = $("#password"), msg = $("#msg"), successMsg = $("#successMsg");
+
+    function setLoading(btn, v, text='Entrar'){ btn.disabled=v; btn.innerHTML = v ? `<span class="spinner"></span>Cargando...` : text; }
+    
+    async function apiPost(path, body) {
+      const res = await fetch(`${API_BASE}?path=${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify(body)
       });
+      return res.json();
     }
 
-    const $ = s => document.querySelector(s);
-    const btn = $("#btnLogin"), email = $("#email"), password = $("#password"), msg = $("#msg");
-    function setLoading(v){ btn.disabled=v; btn.innerHTML = v ? '<span class="spinner"></span>Entrando...' : 'Entrar'; }
-    async function apiLogin(email, password){ return jsonp("login", { email, password }); }
-    function saveSession({ email, rol }){ localStorage.setItem("erp_email", email); localStorage.setItem("erp_rol", rol); }
+    function saveSession({ email, rol }){
+      localStorage.setItem("erp_email", email);
+      localStorage.setItem("erp_rol", rol);
+    }
+    
     function redirectByRole(rol){
-      const map = { ADMIN:"dashboard.html", COORDINADOR:"coordinacion.html", BORDADO:"bordado.html", DTF:"dtf.html", VENDEDOR:"vendedor.html" };
+      const map = { ADMIN:"dashboard.html", COORDINADOR:"cordinacion.html", BORDADO:"bordado.html", DTF:"dtf.html", VENDEDOR:"vendedor.html" };
       location.href = map[rol] || "dashboard.html";
     }
+    
     async function doLogin(){
-      msg.textContent="";
+      msg.textContent=""; successMsg.textContent="";
       const e=email.value.trim().toLowerCase(), p=password.value;
       if(!e||!p){ msg.textContent="Completa email y contraseña."; return; }
-      setLoading(true);
+      setLoading(btnLogin, true);
       try{
-        const r = await apiLogin(e,p);
+        const r = await apiPost('login', { email: e, password: p });
         if(r.ok){ saveSession(r); redirectByRole(r.rol); }
         else msg.textContent = r.error || "Credenciales inválidas.";
-      }catch{ msg.textContent = "Error de red o servidor."; }
-      finally{ setLoading(false); }
+      }catch(err){ msg.textContent = "Error de red o servidor."; }
+      finally{ setLoading(btnLogin, false); }
     }
-    btn.addEventListener("click", doLogin);
+    
+    btnLogin.addEventListener("click", doLogin);
     password.addEventListener("keydown", ev=>{ if(ev.key==="Enter") doLogin(); });
+
+    // --- NUEVA LÓGICA PARA EL MODAL DE REGISTRO ---
+    const dlg = $("#dlgRequest"), btnRequestAccess = $("#btnRequestAccess"), btnCancelRequest = $("#btnCancelRequest"), btnSendRequest = $("#btnSendRequest");
+    const reqName = $("#reqName"), reqEmail = $("#reqEmail"), reqPass = $("#reqPass"), reqMsg = $("#reqMsg");
+
+    btnRequestAccess.onclick = (e) => { e.preventDefault(); dlg.showModal(); };
+    btnCancelRequest.onclick = () => { dlg.close(); };
+    
+    dlg.addEventListener('close', () => {
+        reqName.value = ''; reqEmail.value = ''; reqPass.value = ''; reqMsg.textContent = '';
+    });
+
+    btnSendRequest.onclick = async () => {
+      reqMsg.textContent = '';
+      const name = reqName.value.trim(), mail = reqEmail.value.trim().toLowerCase(), pass = reqPass.value;
+      if(!name || !mail || !pass) { reqMsg.textContent = 'Todos los campos son obligatorios.'; return; }
+      
+      setLoading(btnSendRequest, true, 'Enviar Solicitud');
+      try {
+        const r = await apiPost('request_access', { nombre: name, email: mail, password: pass });
+        if (r.ok) {
+          dlg.close();
+          successMsg.textContent = r.message || 'Solicitud enviada con éxito.';
+        } else {
+          reqMsg.textContent = r.error || 'No se pudo enviar la solicitud.';
+        }
+      } catch(err) {
+        reqMsg.textContent = 'Error de red o servidor.';
+      } finally {
+        setLoading(btnSendRequest, false, 'Enviar Solicitud');
+      }
+    };
   </script>
 </body>
 </html>
