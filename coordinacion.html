@@ -54,64 +54,29 @@
     <div class="error" id="msg"></div>
   </main>
 
-  <!-- Modal editar -->
   <dialog id="dlg">
-    <div class="modal-head">
-      <strong>Editar / Aprobar</strong>
-      <button class="btn" id="btnClose">Cerrar</button>
-    </div>
+    <div class="modal-head"><strong>Editar / Aprobar</strong><button class="btn" id="btnClose">Cerrar</button></div>
     <form class="modal-body" id="form">
       <input type="hidden" name="id" />
       <div><label>Fecha compromiso<input type="date" name="fechaCompromiso" /></label></div>
-      <div><label>Prioridad
-        <select name="prioridad"><option value="NORMAL">Normal</option><option value="URGENTE">Urgente</option></select>
-      </label></div>
-      <div><label>Departamento
-        <select name="departamento"><option value="NINGUNO">Ninguno</option><option value="BORDADO">Bordado</option><option value="DTF">DTF</option></select>
-      </label></div>
-      <div><label>Estado
-        <select name="estado"><option value="SOLICITADA">Solicitada</option><option value="APROBADA">Aprobada</option><option value="EN_PRODUCCION">En producción</option><option value="TERMINADA">Terminada</option></select>
-      </label></div>
+      <div><label>Prioridad<select name="prioridad"><option value="NORMAL">Normal</option><option value="URGENTE">Urgente</option></select></label></div>
+      <div><label>Departamento<select name="departamento"><option value="NINGUNO">Ninguno</option><option value="BORDADO">Bordado</option><option value="DTF">DTF</option></select></label></div>
+      <div><label>Estado<select name="estado"><option value="SOLICITADA">Solicitada</option><option value="APROBADA">Aprobada</option><option value="EN_PRODUCCION">En producción</option><option value="TERMINADA">Terminada</option></select></label></div>
       <div class="full"><div class="error" id="formMsg"></div></div>
     </form>
-    <div class="modal-foot">
-      <button class="btn" id="btnCancel">Cancelar</button>
-      <button class="btn primary" id="btnSave">Guardar</button>
-    </div>
+    <div class="modal-foot"><button class="btn" id="btnCancel">Cancelar</button><button class="btn primary" id="btnSave">Guardar</button></div>
   </dialog>
 
   <script>
-    // === Config ===
-    const API_BASE="https://script.google.com/macros/s/AKfycbztopO7xwjrM_12xB7koAEiXw469zu4ED2ZcXbmvi55Rj-ALHka5A6nNOZmTaseNqb9_w/exec";
-
-    // === JSONP helper ===
-    function jsonp(path, payload = {}, timeoutMs = 120000) {
-      return new Promise((resolve, reject) => {
-        const cbName = "__jsonp_cb_" + Math.random().toString(36).slice(2);
-        const timer = setTimeout(() => { cleanup(); reject(new Error("JSONP timeout")); }, timeoutMs);
-        function cleanup(){ clearTimeout(timer); delete window[cbName]; script?.parentNode?.removeChild(script); }
-        window[cbName] = (data) => { cleanup(); resolve(data); };
-        const qs = new URLSearchParams({ path, callback: cbName, payload: JSON.stringify(payload) });
-        const script = document.createElement("script");
-        script.src = API_BASE + "?" + qs.toString();
-        script.onerror = () => { cleanup(); reject(new Error("JSONP network error")); };
-        document.head.appendChild(script);
-      });
-    }
-
+    const API_BASE="https://script.google.com/macros/s/AKfycbzmonJNOP5QoXCNdoIoKMzFZNZV4Y7AhXHGILqZxx3AMpu9Ueno2U9uvjM1HCgRgfhMdw/exec";
     function guard(){ const s=localStorage.getItem("erp_rol"), e=localStorage.getItem("erp_email"); if(!s||!e){location.href="index.html";return null;} if(!["ADMIN","COORDINADOR"].includes(s)){location.href="dashboard.html";return null;} document.getElementById("who").textContent="— "+e+" ("+s+")"; return true; }
-    async function apiPost(p,b){ return jsonp(p,b); }
+    async function apiPost(p,b){ const r=await fetch(API_BASE+"?path="+encodeURIComponent(p),{ method:"POST", headers:{ "Content-Type":"text/plain" }, body: JSON.stringify(b||{}) }); return r.json(); }
 
     const STATES=["SOLICITADA","APROBADA","EN_PRODUCCION","TERMINADA"], cols={}, counts={};
     STATES.forEach(s=>{ cols[s]=document.getElementById("col-"+s); counts[s]=document.getElementById("c-"+s);});
     const msg=document.getElementById("msg");
 
-    function card(o){ return `<div class="card" draggable="true" data-id="${o.id}">
-      <div class="row"><b>${o.codigo||""}</b><span class="pill">${o.prioridad||"NORMAL"}</span></div>
-      <div>${o.diseno||""} / ${o.prenda||""}</div>
-      <div class="muted">${o.cliente||""} — ${o.departamento||"NINGUNO"}</div>
-      <div class="row" style="margin-top:6px"><button class="btn" data-edit="${o.id}">Editar</button></div>
-    </div>`; }
+    function card(o){ return `<div class="card" draggable="true" data-id="${o.id}"><div class="row"><b>${o.codigo||""}</b><span class="pill">${o.prioridad||"NORMAL"}</span></div><div>${o.diseno||""} / ${o.prenda||""}</div><div class="muted">${o.cliente||""} — ${o.departamento||"NINGUNO"}</div><div class="row" style="margin-top:6px"><button class="btn" data-edit="${o.id}">Editar</button></div></div>`; }
 
     function bindDnD(){
       document.querySelectorAll(".card").forEach(el=> el.addEventListener("dragstart",e=> e.dataTransfer.setData("text/plain", el.dataset.id)));
@@ -119,8 +84,7 @@
         zone.addEventListener("dragover", e=> e.preventDefault());
         zone.addEventListener("drop", async e=>{
           e.preventDefault();
-          const id=e.dataTransfer.getData("text/plain");
-          const estado=zone.parentElement.getAttribute("data-state");
+          const id=e.dataTransfer.getData("text/plain"), estado=zone.parentElement.getAttribute("data-state");
           const r=await apiPost("update",{ id, fields:{ estado }});
           if(r.ok) load(); else msg.textContent=r.error||"No se pudo mover.";
         });
@@ -147,7 +111,6 @@
       bindDnD(); bindEditButtons(r.items);
     }
 
-    // Modal
     const dlg=document.getElementById("dlg"), form=document.getElementById("form"), formMsg=document.getElementById("formMsg");
     function openDialog(o){ form.reset(); formMsg.textContent=""; form.id.value=o.id; form.fechaCompromiso.value=(o.fechaCompromiso||"").slice(0,10); form.prioridad.value=o.prioridad||"NORMAL"; form.departamento.value=o.departamento||"NINGUNO"; form.estado.value=o.estado||"SOLICITADA"; dlg.showModal(); }
     document.getElementById("btnClose").onclick=()=>dlg.close();
