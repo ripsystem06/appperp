@@ -68,13 +68,12 @@
   </dialog>
 
   <script>
-    let API_BASE = '';
+    const API_BASE = 'https://script.google.com/macros/s/AKfycbyJUhftgQni0-nKjA3of7bRxXBVvxk0ybc7lhyWEB5hLk1earvUNhwUY4179mvC3a2lDA/exec';
     
     function guard(){ const s=localStorage.getItem("erp_rol"), e=localStorage.getItem("erp_email"); if(!s||!e){location.href="index.html";return null;} if(!["ADMIN","COORDINADOR"].includes(s)){location.href="dashboard.html";return null;} document.getElementById("who").textContent="— "+e+" ("+s+")"; return true; }
     
     function apiJsonp(path, payload = {}) {
       return new Promise((resolve, reject) => {
-        if (!API_BASE) return reject(new Error("API_BASE URL no está configurada."));
         const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
         window[callbackName] = function(data) {
           delete window[callbackName];
@@ -146,28 +145,13 @@
       } catch (err) { formMsg.textContent = "Error de red al guardar."}
     }
 
-    function initializeApp() {
+    document.addEventListener('DOMContentLoaded', () => {
         document.getElementById("btnRefresh").onclick=load;
         document.getElementById("btnClose").onclick=()=>dlg.close();
         document.getElementById("btnCancel").onclick=(e)=>{e.preventDefault(); dlg.close();};
         document.getElementById("btnSave").onclick=saveDialog;
         if(guard()) load();
-    }
-
-    async function loadConfigAndInit() {
-        try {
-            const response = await fetch('config.json');
-            if (!response.ok) throw new Error('config.json no encontrado.');
-            const config = await response.json();
-            API_BASE = config.apiBaseUrl;
-            initializeApp();
-        } catch (error) {
-            console.error('Error Crítico:', error);
-            document.body.innerHTML = `<div style="color:red; text-align:center; padding: 2rem; font-family:sans-serif;">Error: No se pudo cargar el archivo 'config.json'. Asegúrate de que exista y sea accesible.</div>`;
-        }
-    }
-    
-    document.addEventListener('DOMContentLoaded', loadConfigAndInit);
+    });
   </script>
 </body>
 </html>
