@@ -6,9 +6,10 @@
   <title>ERP — DTF</title>
   <style>
     :root { --bg:#f6f7f9; --card:#fff; --border:#e5e7eb; --muted:#6b7280; --fg:#111827; --colbg:#fafafa; --accent:#111827; }
-    *{ box-sizing:border-box; font-family: system-ui, Arial; color:var(--fg); } body{ margin:0; background:var(--bg); }
-    .bar{ display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#fff; border-bottom:1px solid var(--border); position:sticky; top:0; }
-    .btn{ border:1px solid var(--border); background:#fff; border-radius:10px; padding:8px 12px; cursor:pointer; }
+    *{ box-sizing:border-box; font-family: system-ui, Arial; color:var(--fg); } 
+    body{ margin:0; background:var(--bg); }
+    .bar{ display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#fff; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; }
+    .btn{ border:1px solid var(--border); background:#fff; border-radius:10px; padding:8px 12px; cursor:pointer; text-decoration: none; }
     .content{ padding:16px; max-width:1200px; margin:0 auto; }
     .grid{ display:grid; grid-template-columns: repeat(3, minmax(260px, 1fr)); gap:14px; }
     @media (max-width: 900px){ .grid{ grid-template-columns: 1fr; } }
@@ -32,10 +33,13 @@
   <header class="bar">
     <div><strong>DTF</strong></div>
     <div>
+      <!-- NUEVO: Botón para ver reportes -->
+      <button class="btn" onclick="location.href='reportes.html'">Ver Reportes</button>
       <button class="btn" onclick="location.href='dashboard.html'">Dashboard</button>
       <button class="btn" onclick="localStorage.clear();location.href='index.html'">Salir</button>
     </div>
   </header>
+
   <main class="content">
     <section class="grid">
       <div class="col" data-state="APROBADA"><h3>Aprobadas <span id="c-APROBADA">0</span></h3><div class="dropzone" id="col-APROBADA"></div></div>
@@ -45,77 +49,46 @@
     <p class="muted" id="msg"></p>
   </main>
 
-  <!-- Modal metros -->
   <dialog id="dlg">
-    <div class="modal-head">
-      <strong>Registrar metros</strong>
-      <button class="btn" id="btnClose">Cerrar</button>
-    </div>
+    <div class="modal-head"><strong>Registrar metros</strong><button class="btn" id="btnClose">Cerrar</button></div>
     <div class="modal-body">
-      <input id="orderId" type="hidden" />
-      <label>Metros reales
-        <input id="metros" type="number" min="0" step="0.01" placeholder="0.00" />
-      </label>
+      <input id="orderId" type="hidden" /><label>Metros reales<input id="metros" type="number" min="0" step="0.01" placeholder="0.00" /></label>
       <div class="error" id="formMsg"></div>
     </div>
-    <div class="modal-foot">
-      <button class="btn" id="btnCancel">Cancelar</button>
-      <button class="btn" id="btnSave">Guardar</button>
-    </div>
+    <div class="modal-foot"><button class="btn" id="btnCancel">Cancelar</button><button class="btn" id="btnSave">Guardar</button></div>
   </dialog>
 
   <script>
-    const API_BASE="https://script.google.com/macros/s/AKfycbztopO7xwjrM_12xB7koAEiXw469zu4ED2ZcXbmvi55Rj-ALHka5A6nNOZmTaseNqb9_w/exec";
+    const API_BASE="https://script.google.com/macros/s/AKfycbzmonJNOP5QoXCNdoIoKMzFZNZV4Y7AhXHGILqZxx3AMpu9Ueno2U9uvjM1HCgRgfhMdw/exec";
 
-    function jsonp(path, payload = {}, timeoutMs = 120000) {
-      return new Promise((resolve, reject) => {
-        const cbName = "__jsonp_cb_" + Math.random().toString(36).slice(2);
-        const timer = setTimeout(() => { cleanup(); reject(new Error("JSONP timeout")); }, timeoutMs);
-        function cleanup(){ clearTimeout(timer); delete window[cbName]; script?.parentNode?.removeChild(script); }
-        window[cbName] = (data) => { cleanup(); resolve(data); };
-        const qs = new URLSearchParams({ path, callback: cbName, payload: JSON.stringify(payload) });
-        const script = document.createElement("script");
-        script.src = API_BASE + "?" + qs.toString();
-        script.onerror = () => { cleanup(); reject(new Error("JSONP network error")); };
-        document.head.appendChild(script);
-      });
+    function guard(){
+      const rol=localStorage.getItem("erp_rol");
+      if(!rol){ location.href="index.html"; return null; }
+      if(!["DTF","ADMIN"].includes(rol)){ location.href="dashboard.html"; return null; }
+      return true;
     }
-
-    function guard(){ const r=localStorage.getItem("erp_rol"); if(!r){location.href="index.html";return null;} if(!["DTF","ADMIN"].includes(r)){ location.href="dashboard.html"; return null;} return true; }
-    async function apiPost(p,b){ return jsonp(p,b);}
+    async function apiPost(path, payload){
+      const res = await fetch(API_BASE+"?path="+encodeURIComponent(path),{
+        method:"POST", headers:{ "Content-Type":"text/plain" }, body: JSON.stringify(payload||{})
+      });
+      return res.json();
+    }
 
     const cols={ APROBADA:document.getElementById("col-APROBADA"), EN_PRODUCCION:document.getElementById("col-EN_PRODUCCION"), TERMINADA:document.getElementById("col-TERMINADA") };
     const counts={ APROBADA:document.getElementById("c-APROBADA"), EN_PRODUCCION:document.getElementById("c-EN_PRODUCCION"), TERMINADA:document.getElementById("c-TERMINADA") };
     const msg=document.getElementById("msg");
 
-    function card(o){
-      return `<div class="card" draggable="true" data-id="${o.id}">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <b>${o.codigo||""}</b><span class="pill">${o.prioridad||"NORMAL"}</span>
-        </div>
-        <div>${o.diseno||""} / ${o.prenda||""}</div>
-        <div class="muted">${o.cliente||""}</div>
-        <div style="margin-top:6px;display:flex;gap:6px;">
-          <button class="btn" data-metric="${o.id}">Metros</button>
-        </div>
-      </div>`;
-    }
+    function card(o){ return `<div class="card" draggable="true" data-id="${o.id}"><div style="display:flex;justify-content:space-between;align-items:center;"><b>${o.codigo||""}</b><span class="pill">${o.prioridad||"NORMAL"}</span></div><div>${o.diseno||""} / ${o.prenda||""}</div><div class="muted">${o.cliente||""}</div><div style="margin-top:6px;display:flex;gap:6px;"><button class="btn" data-metric="${o.id}">Metros</button></div></div>`; }
 
     function bindDnD(){
-      document.querySelectorAll(".card").forEach(el=>{
-        el.addEventListener("dragstart", e=>{
-          e.dataTransfer.setData("text/plain", el.dataset.id);
-        });
-      });
+      document.querySelectorAll(".card").forEach(el=> el.addEventListener("dragstart", e=> e.dataTransfer.setData("text/plain", el.dataset.id)));
       document.querySelectorAll(".dropzone").forEach(zone=>{
         zone.addEventListener("dragover", e=> e.preventDefault());
         zone.addEventListener("drop", async e=>{
           e.preventDefault();
-          const id=e.dataTransfer.getData("text/plain");
-          const estado=zone.parentElement.getAttribute("data-state");
+          const id=e.dataTransfer.getData("text/plain"), estado=zone.parentElement.getAttribute("data-state");
           const res=await apiPost("update",{ id, fields:{ estado }});
-          if(res.ok) load();
-          else msg.textContent=res.error||"No se pudo mover";
+          if(res.ok) load(); else msg.textContent=res.error||"No se pudo mover";
         });
       });
     }
@@ -123,31 +96,29 @@
     function bindMetricButtons(){
       document.querySelectorAll("[data-metric]").forEach(btn=>{
         btn.onclick=()=>{
-          document.getElementById("orderId").value=btn.dataset.metric;
-          document.getElementById("metros").value="";
+          document.getElementById("orderId").value = btn.dataset.metric;
+          document.getElementById("metros").value = "";
           document.getElementById("dlg").showModal();
         };
       });
     }
 
     async function saveMetric(){
-      const orderId=document.getElementById("orderId").value;
-      const metros=parseFloat(document.getElementById("metros").value||"0");
-      const formMsg=document.getElementById("formMsg");
-      formMsg.textContent="";
-      const res=await apiPost("dtf",{ orderId, metrosReales: metros });
-      if(res.ok){ document.getElementById("dlg").close(); } else { formMsg.textContent=res.error||"No se pudo guardar"; }
+      const orderId = document.getElementById("orderId").value, metros = parseFloat(document.getElementById("metros").value||"0"), formMsg = document.getElementById("formMsg");
+      formMsg.textContent = "";
+      const res = await apiPost("dtf",{ orderId, metrosReales: metros });
+      if(res.ok) document.getElementById("dlg").close(); else formMsg.textContent = res.error || "No se pudo guardar";
     }
 
     async function load(){
       msg.textContent="";
       Object.keys(cols).forEach(k=>{ cols[k].innerHTML=""; counts[k].textContent="0"; });
-      const all=await apiPost("orders",{});
+      const all = await apiPost("orders",{});
       if(!all.ok){ msg.textContent=all.error||"Error al cargar"; return; }
-      const items=all.items.filter(o=> (o.departamento||"") === "DTF" );
-      const grouped={ APROBADA:[], EN_PRODUCCION:[], TERMINADA:[] };
+      const items = all.items.filter(o=> (o.departamento||"") === "DTF");
+      const grouped = { APROBADA:[], EN_PRODUCCION:[], TERMINADA:[] };
       items.forEach(o=> (grouped[o.estado]||grouped.APROBADA).push(o));
-      Object.keys(grouped).forEach(k=>{ cols[k].innerHTML=grouped[k].map(card).join(""); counts[k].textContent=grouped[k].length; });
+      Object.keys(grouped).forEach(k=>{ cols[k].innerHTML = grouped[k].map(card).join(""); counts[k].textContent = grouped[k].length; });
       bindDnD(); bindMetricButtons();
     }
 
