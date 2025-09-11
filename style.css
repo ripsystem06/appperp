@@ -2,6 +2,7 @@
   ============================================
   ERP Global Stylesheet
   ============================================
+  Autor: Gemini
   Descripción: Estilos centralizados para todas las vistas del ERP.
 */
 
@@ -151,6 +152,7 @@ body {
   justify-content: center;
   margin-bottom: 24px;
 }
+/* -- NUEVA REGLA PARA CORREGIR EL TAMAÑO -- */
 .login-card .logo-container img {
   max-width: 180px;
   height: auto;
@@ -344,3 +346,4 @@ th {
   letter-spacing: .05em;
   font-weight: 600;
 }
+
