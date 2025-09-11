@@ -43,15 +43,41 @@
   <dialog id="dlg">
     <div class="modal-head"><strong>Nueva orden</strong><button class="btn" onclick="document.getElementById('dlg').close()">Cerrar</button></div>
     <form class="modal-body" id="form">
-      <div style="grid-column: 1 / -1;"><label>Cliente<input name="cliente" required /></label></div>
-      <div><label>Diseño<input name="diseno" required /></label></div>
-      <div><label>Prenda<input name="prenda" required /></label></div>
-      <div><label>¿Requiere decorado?<select name="requiereDecorado"><option value="true">Sí</option><option value="false" selected>No</option></select></label></div>
-      <div><label>Tipo de decorado<select name="tipoDecorado"><option value="NINGUNO" selected>Ninguno</option><option value="BORDADO">Bordado</option><option value="DTF">DTF</option></select></label></div>
-      <div><label>¿Arte disponible?<select name="arteDisponible"><option value="true">Sí</option><option value="false" selected>No</option></select></label></div>
-      <div><label>¿Requiere digitalizado?<select name="requiereDigitalizado"><option value="true">Sí</option><option value="false" selected>No</option></select></label></div>
-      <div><label>Fecha estimada<input name="fechaEstimada" type="date" /></label></div>
-      <div style="grid-column: 1 / -1;"><div class="error" id="formMsg"></div></div>
+      <div class="form-group full-width">
+        <label for="cliente">Cliente</label>
+        <input id="cliente" name="cliente" type="text" required />
+      </div>
+      <div class="form-group">
+        <label for="diseno">Diseño</label>
+        <input id="diseno" name="diseno" type="text" required />
+      </div>
+      <div class="form-group">
+        <label for="prenda">Prenda</label>
+        <input id="prenda" name="prenda" type="text" required />
+      </div>
+      <div class="form-group">
+        <label for="requiereDecorado">¿Requiere decorado?</label>
+        <select id="requiereDecorado" name="requiereDecorado"><option value="true">Sí</option><option value="false" selected>No</option></select>
+      </div>
+      <div class="form-group">
+        <label for="tipoDecorado">Tipo de decorado</label>
+        <select id="tipoDecorado" name="tipoDecorado"><option value="NINGUNO" selected>Ninguno</option><option value="BORDADO">Bordado</option><option value="DTF">DTF</option></select>
+      </div>
+      <div class="form-group">
+        <label for="arteDisponible">¿Arte disponible?</label>
+        <select id="arteDisponible" name="arteDisponible"><option value="true">Sí</option><option value="false" selected>No</option></select>
+      </div>
+      <div class="form-group">
+        <label for="requiereDigitalizado">¿Requiere digitalizado?</label>
+        <select id="requiereDigitalizado" name="requiereDigitalizado"><option value="true">Sí</option><option value="false" selected>No</option></select>
+      </div>
+      <div class="form-group">
+        <label for="fechaEstimada">Fecha estimada</label>
+        <input id="fechaEstimada" name="fechaEstimada" type="date" />
+      </div>
+      <div class="form-group full-width">
+        <div class="error" id="formMsg"></div>
+      </div>
     </form>
     <div class="modal-foot"><button class="btn" id="btnCancel">Cancelar</button><button class="btn primary" id="btnSave">Guardar</button></div>
   </dialog>
@@ -168,3 +194,4 @@
   </script>
 </body>
 </html>
+
