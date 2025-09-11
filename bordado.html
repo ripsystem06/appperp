@@ -7,42 +7,77 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="bar">
-    <div><strong>Bordado</strong></div>
-    <div>
-      <button class="btn" onclick="location.href='reportes.html'">Ver Reportes</button>
-      <button class="btn" onclick="location.href='dashboard.html'">Dashboard</button>
-      <button class="btn" onclick="localStorage.clear();location.href='index.html'">Salir</button>
+  <header class="header-bar">
+    <div class="logo-container">
+      <img src="https://www.uniformesprofesionales.mx/assets/upfr/logoheader.png" alt="Logo de la Empresa">
+      <strong>Bordado</strong>
+    </div>
+    <div class="user-controls" id="nav-links">
+      <!-- Los enlaces se generarán con JavaScript -->
     </div>
   </header>
 
-  <main class="content">
-    <section class="grid">
-      <div class="col" data-state="APROBADA"><h3>Aprobadas <span id="c-APROBADA">0</span></h3><div class="dropzone" id="col-APROBADA"></div></div>
-      <div class="col" data-state="EN_PRODUCCION"><h3>En producción <span id="c-EN_PRODUCCION">0</span></h3><div class="dropzone" id="col-EN_PRODUCCION"></div></div>
-      <div class="col" data-state="TERMINADA"><h3>Terminadas <span id="c-TERMINADA">0</span></h3><div class="dropzone" id="col-TERMINADA"></div></div>
+  <main class="main-content">
+    <section class="kanban-grid" style="grid-template-columns: repeat(3, 1fr);">
+      <div class="kanban-col" data-state="APROBADA">
+        <h3>Aprobadas <span class="pill" id="c-APROBADA">0</span></h3>
+        <div class="dropzone" id="col-APROBADA"></div>
+      </div>
+      <div class="kanban-col" data-state="EN_PRODUCCION">
+        <h3>En producción <span class="pill" id="c-EN_PRODUCCION">0</span></h3>
+        <div class="dropzone" id="col-EN_PRODUCCION"></div>
+      </div>
+      <div class="kanban-col" data-state="TERMINADA">
+        <h3>Terminadas <span class="pill" id="c-TERMINADA">0</span></h3>
+        <div class="dropzone" id="col-TERMINADA"></div>
+      </div>
     </section>
-    <p class="muted" id="msg"></p>
+    <p class="muted" id="msg" style="text-align:center; margin-top:16px;"></p>
   </main>
 
+  <!-- Modal para registrar puntadas -->
   <dialog id="dlg">
-    <div class="modal-head"><strong>Registrar puntadas</strong><button class="btn" id="btnClose">Cerrar</button></div>
-    <div class="modal-body">
-      <input id="orderId" type="hidden" />
-      <label>Puntadas reales<input id="puntadas" type="number" min="0" step="1" placeholder="0" /></label>
-      <div class="error" id="formMsg"></div>
+    <div class="modal-head">
+      <strong>Registrar Puntadas</strong>
+      <button class="btn" onclick="this.closest('dialog').close()">Cerrar</button>
     </div>
-    <div class="modal-foot"><button class="btn" id="btnCancel">Cancelar</button><button class="btn" id="btnSave">Guardar</button></div>
+    <form class="modal-body" id="form">
+      <input type="hidden" id="orderId" />
+      <div class="form-group full-width">
+        <label for="puntadas">Puntadas Reales</label>
+        <input id="puntadas" type="number" min="0" step="1" placeholder="Ej: 15000" />
+      </div>
+      <div class="form-group full-width">
+        <div class="error" id="formMsg"></div>
+      </div>
+    </form>
+    <div class="modal-foot">
+      <button class="btn" id="btnCancel">Cancelar</button>
+      <button class="btn primary" id="btnSave">Guardar</button>
+    </div>
   </dialog>
 
   <script>
     const API_BASE = 'https://script.google.com/macros/s/AKfycbyJUhftgQni0-nKjA3of7bRxXBVvxk0ybc7lhyWEB5hLk1earvUNhwUY4179mvC3a2lDA/exec';
 
-    function guard(){
-      const rol=localStorage.getItem("erp_rol");
-      if(!rol){ location.href="index.html"; return null; }
-      if(!["BORDADO","ADMIN"].includes(rol)){ location.href="dashboard.html"; return null; }
-      return true;
+    function checkAuth() {
+      const email = localStorage.getItem("erp_email"), rol = localStorage.getItem("erp_rol");
+      if (!email || !rol) { location.href = "index.html"; return null; }
+      if (!["ADMIN", "BORDADO"].includes(rol)) { location.href = "index.html"; return null; }
+      generateNavLinks(rol);
+      return { email, rol };
+    }
+
+    function generateNavLinks(rol) {
+      const container = document.getElementById('nav-links');
+      let links = `<button class="btn" id="btnRefresh">Actualizar</button>
+                   <a href="reportes.html" class="btn">Reportes</a>`;
+      if (rol === 'ADMIN') {
+        links += `<a href="dashboard.html" class="btn">Admin Dashboard</a>`;
+      }
+      links += `<button class="btn" onclick="localStorage.clear();location.href='index.html'">Salir</button>`;
+      container.innerHTML = links;
+      document.getElementById("btnRefresh").onclick = load;
     }
     
     function apiJsonp(path, payload = {}) {
@@ -55,78 +90,123 @@
         };
         const script = document.createElement('script');
         const payloadStr = encodeURIComponent(JSON.stringify(payload));
-        script.src = `${API_BASE}?path=${path}&payload=${payloadStr}&callback=${callbackName}`;
+        const cacheBuster = `&_=${new Date().getTime()}`;
+        script.src = `${API_BASE}?path=${path}&payload=${payloadStr}&callback=${callbackName}${cacheBuster}`;
         script.onerror = () => {
-            delete window[callbackName];
-            document.body.removeChild(script);
-            reject(new Error('JSONP request failed'));
+          delete window[callbackName];
+          document.body.removeChild(script);
+          reject(new Error('JSONP request failed'));
         };
         document.body.appendChild(script);
       });
     }
 
-    const cols={ APROBADA:document.getElementById("col-APROBADA"), EN_PRODUCCION:document.getElementById("col-EN_PRODUCCION"), TERMINADA:document.getElementById("col-TERMINADA") };
-    const counts={ APROBADA:document.getElementById("c-APROBADA"), EN_PRODUCCION:document.getElementById("c-EN_PRODUCCION"), TERMINADA:document.getElementById("c-TERMINADA") };
-    const msg=document.getElementById("msg");
+    const STATES = ["APROBADA", "EN_PRODUCCION", "TERMINADA"];
+    const cols = {}, counts = {};
+    STATES.forEach(s => { cols[s] = document.getElementById("col-" + s); counts[s] = document.getElementById("c-" + s); });
+    const msg = document.getElementById("msg");
 
-    function card(o){ return `<div class="card" draggable="true" data-id="${o.id}"><div style="display:flex;justify-content:space-between;align-items:center;"><b>${o.codigo||""}</b><span class="pill">${o.prioridad||"NORMAL"}</span></div><div>${o.diseno||""} / ${o.prenda||""}</div><div class="muted">${o.cliente||""}</div><div style="margin-top:6px;display:flex;gap:6px;"><button class="btn" data-metric="${o.id}">Puntadas</button></div></div>`; }
+    function cardTemplate(o) {
+      const fechaComp = (o.fechaCompromiso || "").split('T')[0] || 'N/A';
+      return `<div class="kanban-card ${o.prioridad === 'URGente' ? 'urgent' : ''}" draggable="true" data-id="${o.id}">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <b>${o.codigo || ""}</b><span class="pill">${o.prioridad || "NORMAL"}</span>
+        </div>
+        <div>${o.diseno || ""} / ${o.prenda || ""}</div>
+        <div class="muted">${o.cliente || ""}</div>
+        <div class="muted" style="margin-top: 4px; font-weight: 600;">Fecha Comp: ${fechaComp}</div>
+        <div style="margin-top:8px;">
+          <button class="btn" data-metric="${o.id}" style="width:100%;">Registrar Puntadas</button>
+        </div>
+      </div>`;
+    }
 
-    function bindDnD(){
-      document.querySelectorAll(".card").forEach(el=> el.addEventListener("dragstart", e=> e.dataTransfer.setData("text/plain", el.dataset.id) ));
-      document.querySelectorAll(".dropzone").forEach(zone=>{
-        zone.addEventListener("dragover", e=> e.preventDefault());
-        zone.addEventListener("drop", async e=>{
+    function bindDnD() {
+      document.querySelectorAll(".kanban-card").forEach(el => el.addEventListener("dragstart", e => e.dataTransfer.setData("text/plain", el.dataset.id)));
+      document.querySelectorAll(".dropzone").forEach(zone => {
+        zone.addEventListener("dragover", e => e.preventDefault());
+        zone.addEventListener("drop", async e => {
           e.preventDefault();
-          const id=e.dataTransfer.getData("text/plain"), estado=zone.parentElement.getAttribute("data-state");
+          const id = e.dataTransfer.getData("text/plain");
+          const estado = zone.parentElement.getAttribute("data-state");
           try {
-            const res=await apiJsonp("update",{ id, fields:{ estado }});
-            if(res.ok) load(); else msg.textContent=res.error||"No se pudo mover";
-          } catch(err) { msg.textContent="Error de red." }
+            const r = await apiJsonp("update", { id, fields: { estado } });
+            if (r.ok) load(); else msg.textContent = r.error || "No se pudo mover.";
+          } catch (err) { msg.textContent = "Error de red al mover la orden." }
         });
       });
     }
 
-    function bindMetricButtons(){
-      document.querySelectorAll("[data-metric]").forEach(btn=>{
-        btn.onclick=()=>{
+    function bindMetricButtons() {
+      document.querySelectorAll("[data-metric]").forEach(btn => {
+        btn.onclick = () => {
           document.getElementById("orderId").value = btn.dataset.metric;
           document.getElementById("puntadas").value = "";
+          document.getElementById("formMsg").textContent = "";
           document.getElementById("dlg").showModal();
         };
       });
     }
 
-    async function saveMetric(){
-      const orderId = document.getElementById("orderId").value, puntadas = parseInt(document.getElementById("puntadas").value||"0",10), formMsg = document.getElementById("formMsg");
+    async function saveMetric() {
+      const orderId = document.getElementById("orderId").value;
+      const puntadas = parseInt(document.getElementById("puntadas").value || "0", 10);
+      const formMsg = document.getElementById("formMsg");
+      
+      if(isNaN(puntadas) || puntadas <= 0) {
+        formMsg.textContent = "Por favor, introduce un número válido de puntadas.";
+        return;
+      }
       formMsg.textContent = "";
+
       try {
-        const res = await apiJsonp("embroidery",{ orderId, puntadasReales: puntadas });
-        if(res.ok) document.getElementById("dlg").close(); else formMsg.textContent = res.error || "No se pudo guardar";
-      } catch (err) { formMsg.textContent = "Error de red."}
+        const res = await apiJsonp("embroidery", { orderId, puntadasReales: puntadas });
+        if (res.ok) {
+          document.getElementById("dlg").close();
+          // Opcional: podrías mostrar una pequeña notificación de éxito
+        } else {
+          formMsg.textContent = res.error || "No se pudo guardar";
+        }
+      } catch (err) {
+        formMsg.textContent = "Error de red al guardar las puntadas.";
+      }
     }
 
-    async function load(){
-      msg.textContent="";
-      Object.keys(cols).forEach(k=>{ cols[k].innerHTML=""; counts[k].textContent="0"; });
+    async function load() {
+      msg.textContent = "";
+      STATES.forEach(s => { if(cols[s]) { cols[s].innerHTML = "Cargando..."; counts[s].textContent = "0"; } });
+      
       try {
-        const all = await apiJsonp("orders",{});
-        if(!all.ok){ msg.textContent=all.error||"Error al cargar"; return; }
-        const items = all.items.filter(o=> (o.departamento||"") === "BORDADO");
-        const grouped = { APROBADA:[], EN_PRODUCCION:[], TERMINADA:[] };
-        items.forEach(o=> (grouped[o.estado]||grouped.APROBADA).push(o));
-        Object.keys(grouped).forEach(k=>{ cols[k].innerHTML = grouped[k].map(card).join(""); counts[k].textContent = grouped[k].length; });
-        bindDnD(); bindMetricButtons();
-      } catch(err) { msg.textContent = "Error de red al cargar órdenes."}
+        const r = await apiJsonp("orders", {});
+        if (!r.ok) { msg.textContent = r.error || "Error al cargar las órdenes."; return; }
+        
+        const items = r.items.filter(o => o.departamento === "BORDADO");
+        const grouped = { APROBADA: [], EN_PRODUCCION: [], TERMINADA: [] };
+        items.forEach(o => {
+            if (grouped[o.estado]) {
+                grouped[o.estado].push(o);
+            }
+        });
+
+        STATES.forEach(s => {
+          if (cols[s]) {
+            cols[s].innerHTML = grouped[s].map(cardTemplate).join("");
+            counts[s].textContent = grouped[s].length;
+          }
+        });
+        bindDnD();
+        bindMetricButtons();
+      } catch (err) { msg.textContent = "Error de red al cargar las órdenes." }
     }
-    
+
     document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById("btnClose").onclick=()=>document.getElementById("dlg").close();
-        document.getElementById("btnCancel").onclick=()=>document.getElementById("dlg").close();
-        document.getElementById("btnSave").onclick=saveMetric;
-        if(guard()) load();
+      if (checkAuth()) {
+        load();
+        document.getElementById("btnCancel").onclick = (e) => { e.preventDefault(); document.getElementById("dlg").close(); };
+        document.getElementById("btnSave").onclick = saveMetric;
+      }
     });
   </script>
 </body>
 </html>
-
 
