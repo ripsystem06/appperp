@@ -3,126 +3,94 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ERP — Coordinación</title>
+  <title>ERP — Dashboard</title>
   <style>
-    :root { --bg:#f6f7f9; --card:#fff; --border:#e5e7eb; --muted:#6b7280; --fg:#111827; --colbg:#fafafa; --accent:#111827; }
+    :root { --bg:#f6f7f9; --card:#fff; --border:#e5e7eb; --muted:#6b7280; --fg:#111827; --accent:#111827; }
     *{ box-sizing:border-box; font-family: system-ui, Arial; color:var(--fg); }
     body{ margin:0; background:var(--bg); }
     .bar{ display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#fff; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; }
-    .muted{ color:var(--muted); font-size:12px; }
     .btn{ border:1px solid var(--border); background:#fff; border-radius:10px; padding:8px 12px; cursor:pointer; }
-    .btn.primary{ background:var(--accent); color:#fff; border-color:var(--accent); }
-    .content{ padding:16px; max-width:1200px; margin:0 auto; }
-    .grid{ display:grid; grid-template-columns: repeat(4, minmax(240px, 1fr)); gap:14px; }
-    @media (max-width: 1100px){ .grid{ grid-template-columns: repeat(2, 1fr);} }
-    @media (max-width: 640px){ .grid{ grid-template-columns: 1fr; } }
-    .col{ background:var(--colbg); border:1px solid var(--border); border-radius:14px; padding:10px; min-height:300px; }
-    .col h3{ font-size:14px; margin:4px 4px 10px; color:#374151; display:flex; justify-content:space-between; }
-    .dropzone{ min-height:240px; display:flex; flex-direction:column; gap:8px; }
-    .card{ background:#fff; border:1px solid var(--border); border-radius:12px; padding:10px; }
-    .row{ display:flex; justify-content:space-between; align-items:center; gap:6px; }
-    .pill{ border:1px solid var(--border); border-radius:999px; padding:2px 8px; font-size:11px; color:#374151; }
-    dialog{ width:560px; max-width:95vw; border:1px solid var(--border); border-radius:16px; padding:0; }
-    dialog::backdrop{ background:rgba(0,0,0,.2); }
-    .modal-head, .modal-foot{ padding:12px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
-    .modal-foot{ border-top:1px solid var(--border); border-bottom:none; }
-    .modal-body{ padding:16px; display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-    label{ font-size:12px; color:#374151; display:block; }
-    input, select{ width:100%; padding:10px; border:1px solid var(--border); border-radius:10px; margin-top:6px; }
-    .full{ grid-column:1/-1; }
-    .error{ color:#b91c1c; font-size:13px; min-height:18px; }
+    .content{ padding:16px; max-width:1100px; margin:0 auto; display:grid; gap:16px; }
+    .cards{ display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; }
+    .card{ background:#fff; border:1px solid var(--border); border-radius:14px; padding:16px; }
+    .title{ font-weight:700; margin-bottom:6px; font-size:14px; color:#374151; }
+    .big{ font-size:28px; font-weight:800; }
+    .muted{ color:#6b7280; font-size:12px; }
+    .hbar{ display:flex; gap:8px; align-items:flex-end; height:180px; padding:10px; border:1px dashed var(--border); border-radius:12px; background:#fff; }
+    .baritem{ flex:1; background:#11182711; border:1px solid var(--border); border-radius:8px 8px 0 0; display:flex; align-items:flex-end; justify-content:center; }
+    .barfill{ width:100%; background:var(--accent); border-radius:8px 8px 0 0; }
+    table{ width:100%; border-collapse: collapse; font-size:14px; }
+    th,td{ padding:8px 10px; border-bottom:1px solid var(--border); text-align:left; }
+    th{ color:#374151; font-size:12px; text-transform: uppercase; letter-spacing:.04em; }
   </style>
 </head>
 <body>
   <header class="bar">
-    <div><strong>Coordinación — Kanban</strong> <span class="muted" id="who"></span></div>
+    <div><strong>Dashboard</strong> <span class="muted" id="who"></span></div>
     <div>
-      <button class="btn" id="btnRefresh">Actualizar</button>
-      <button class="btn" onclick="location.href='dashboard.html'">Dashboard</button>
+      <button class="btn" onclick="location.href='vendedor.html'">Vendedor</button>
+      <button class="btn" onclick="location.href='coordinacion.html'">Coordinación</button>
+      <button class="btn" onclick="location.href='bordado.html'">Bordado</button>
+      <button class="btn" onclick="location.href='dtf.html'">DTF</button>
       <button class="btn" onclick="localStorage.clear();location.href='index.html'">Salir</button>
     </div>
   </header>
 
   <main class="content">
-    <section class="grid">
-      <div class="col" data-state="SOLICITADA"><h3>Solicitadas <span class="pill" id="c-SOLICITADA">0</span></h3><div class="dropzone" id="col-SOLICITADA"></div></div>
-      <div class="col" data-state="APROBADA"><h3>Aprobadas <span class="pill" id="c-APROBADA">0</span></h3><div class="dropzone" id="col-APROBADA"></div></div>
-      <div class="col" data-state="EN_PRODUCCION"><h3>En producción <span class="pill" id="c-EN_PRODUCCION">0</span></h3><div class="dropzone" id="col-EN_PRODUCCION"></div></div>
-      <div class="col" data-state="TERMINADA"><h3>Terminadas <span class="pill" id="c-TERMINADA">0</span></h3><div class="dropzone" id="col-TERMINADA"></div></div>
+    <section class="cards" id="totals"></section>
+    <section class="card"><div class="title">Órdenes por estado</div><div class="hbar" id="byState"></div></section>
+    <section class="card"><div class="title">Órdenes por departamento</div><div class="hbar" id="byDept"></div></section>
+    <section class="card">
+      <div class="title">Top 10 vendedores por órdenes</div>
+      <table id="topV">
+        <thead><tr><th>#</th><th>Vendedor</th><th>Órdenes</th></tr></thead>
+        <tbody></tbody>
+      </table>
     </section>
-    <p class="muted">Arrastra tarjetas entre columnas para actualizar el estado.</p>
-    <div class="error" id="msg"></div>
   </main>
-
-  <dialog id="dlg">
-    <div class="modal-head"><strong>Editar / Aprobar</strong><button class="btn" id="btnClose">Cerrar</button></div>
-    <form class="modal-body" id="form">
-      <input type="hidden" name="id" />
-      <div><label>Fecha compromiso<input type="date" name="fechaCompromiso" /></label></div>
-      <div><label>Prioridad<select name="prioridad"><option value="NORMAL">Normal</option><option value="URGENTE">Urgente</option></select></label></div>
-      <div><label>Departamento<select name="departamento"><option value="NINGUNO">Ninguno</option><option value="BORDADO">Bordado</option><option value="DTF">DTF</option></select></label></div>
-      <div><label>Estado<select name="estado"><option value="SOLICITADA">Solicitada</option><option value="APROBADA">Aprobada</option><option value="EN_PRODUCCION">En producción</option><option value="TERMINADA">Terminada</option></select></label></div>
-      <div class="full"><div class="error" id="formMsg"></div></div>
-    </form>
-    <div class="modal-foot"><button class="btn" id="btnCancel">Cancelar</button><button class="btn primary" id="btnSave">Guardar</button></div>
-  </dialog>
 
   <script>
     const API_BASE="https://script.google.com/macros/s/AKfycbzmonJNOP5QoXCNdoIoKMzFZNZV4Y7AhXHGILqZxx3AMpu9Ueno2U9uvjM1HCgRgfhMdw/exec";
-    function guard(){ const s=localStorage.getItem("erp_rol"), e=localStorage.getItem("erp_email"); if(!s||!e){location.href="index.html";return null;} if(!["ADMIN","COORDINADOR"].includes(s)){location.href="dashboard.html";return null;} document.getElementById("who").textContent="— "+e+" ("+s+")"; return true; }
-    async function apiPost(p,b){ const r=await fetch(API_BASE+"?path="+encodeURIComponent(p),{ method:"POST", headers:{ "Content-Type":"text/plain" }, body: JSON.stringify(b||{}) }); return r.json(); }
 
-    const STATES=["SOLICITADA","APROBADA","EN_PRODUCCION","TERMINADA"], cols={}, counts={};
-    STATES.forEach(s=>{ cols[s]=document.getElementById("col-"+s); counts[s]=document.getElementById("c-"+s);});
-    const msg=document.getElementById("msg");
-
-    function card(o){ return `<div class="card" draggable="true" data-id="${o.id}"><div class="row"><b>${o.codigo||""}</b><span class="pill">${o.prioridad||"NORMAL"}</span></div><div>${o.diseno||""} / ${o.prenda||""}</div><div class="muted">${o.cliente||""} — ${o.departamento||"NINGUNO"}</div><div class="row" style="margin-top:6px"><button class="btn" data-edit="${o.id}">Editar</button></div></div>`; }
-
-    function bindDnD(){
-      document.querySelectorAll(".card").forEach(el=> el.addEventListener("dragstart",e=> e.dataTransfer.setData("text/plain", el.dataset.id)));
-      document.querySelectorAll(".dropzone").forEach(zone=>{
-        zone.addEventListener("dragover", e=> e.preventDefault());
-        zone.addEventListener("drop", async e=>{
-          e.preventDefault();
-          const id=e.dataTransfer.getData("text/plain"), estado=zone.parentElement.getAttribute("data-state");
-          const r=await apiPost("update",{ id, fields:{ estado }});
-          if(r.ok) load(); else msg.textContent=r.error||"No se pudo mover.";
-        });
+    function guard(){
+      const email=localStorage.getItem("erp_email"), rol=localStorage.getItem("erp_rol");
+      if(!email||!rol){ location.href="index.html"; return null; }
+      document.getElementById("who").textContent = `— ${email} (${rol})`;
+      return {email,rol};
+    }
+    async function apiPost(path,payload){
+      const res = await fetch(API_BASE+"?path="+encodeURIComponent(path),{
+        method:"POST", headers:{ "Content-Type":"text/plain" }, body: JSON.stringify(payload||{})
       });
+      return res.json();
     }
 
-    function bindEditButtons(data){
-      document.querySelectorAll("[data-edit]").forEach(btn=>{
-        btn.onclick=()=>{
-          const o = data.find(x=> String(x.id)===String(btn.dataset.edit));
-          openDialog(o);
-        };
-      });
+    function renderTotals(stats){
+      const total = Object.values(stats.byState).reduce((a,b)=>a+b,0), done = stats.byState.TERMINADA || 0, prod = stats.byState.EN_PRODUCCION || 0, ap = stats.byState.APROBADA || 0, sol = stats.byState.SOLICITADA || 0;
+      document.getElementById("totals").innerHTML = `<div class="card"><div class="title">Total órdenes</div><div class="big">${total}</div></div><div class="card"><div class="title">Terminadas</div><div class="big">${done}</div></div><div class="card"><div class="title">En producción</div><div class="big">${prod}</div></div><div class="card"><div class="title">Aprobadas</div><div class="big">${ap}</div></div><div class="card"><div class="title">Solicitadas</div><div class="big">${sol}</div></div>`;
+    }
+
+    function renderBar(containerId, dataObj){
+      const cont = document.getElementById(containerId), entries = Object.entries(dataObj);
+      if (entries.length === 0) { cont.innerHTML = `<span class="muted">No hay datos.</span>`; return; }
+      const max = Math.max(1, ...entries.map(([,v])=>v));
+      cont.innerHTML = entries.map(([k,v])=>{ const h = Math.round((v/max) * 160) + 8; return `<div class="baritem" title="${k}: ${v}"><div class="barfill" style="height:${h}px"></div></div>`; }).join("");
+    }
+
+    function renderTopV(stats){
+      const tb = document.querySelector("#topV tbody");
+      tb.innerHTML = stats.topVendors.map((row, i)=>`<tr><td>${i+1}</td><td>${row.email || "—"}</td><td>${row.count}</td></tr>`).join("");
     }
 
     async function load(){
-      msg.textContent="";
-      STATES.forEach(s=>{ cols[s].innerHTML=""; counts[s].textContent="0"; });
-      const r=await apiPost("orders",{});
-      if(!r.ok){ msg.textContent=r.error||"Error al cargar."; return; }
-      const grouped={ SOLICITADA:[],APROBADA:[],EN_PRODUCCION:[],TERMINADA:[] };
-      r.items.forEach(o=> (grouped[o.estado]||grouped.SOLICITADA).push(o));
-      STATES.forEach(s=>{ cols[s].innerHTML=grouped[s].map(card).join(""); counts[s].textContent=grouped[s].length; });
-      bindDnD(); bindEditButtons(r.items);
+      const res = await apiPost("stats",{});
+      if(!res.ok){ alert(res.error || "No se pudo cargar el dashboard"); return; }
+      renderTotals(res);
+      renderBar("byState", res.byState);
+      renderBar("byDept",  res.byDept);
+      renderTopV(res);
     }
 
-    const dlg=document.getElementById("dlg"), form=document.getElementById("form"), formMsg=document.getElementById("formMsg");
-    function openDialog(o){ form.reset(); formMsg.textContent=""; form.id.value=o.id; form.fechaCompromiso.value=(o.fechaCompromiso||"").slice(0,10); form.prioridad.value=o.prioridad||"NORMAL"; form.departamento.value=o.departamento||"NINGUNO"; form.estado.value=o.estado||"SOLICITADA"; dlg.showModal(); }
-    document.getElementById("btnClose").onclick=()=>dlg.close();
-    document.getElementById("btnCancel").onclick=(e)=>{e.preventDefault(); dlg.close();};
-    document.getElementById("btnSave").onclick=async (e)=>{
-      e.preventDefault(); formMsg.textContent="";
-      const fields={ fechaCompromiso: form.fechaCompromiso.value||null, prioridad:form.prioridad.value, departamento:form.departamento.value, estado:form.estado.value };
-      const r=await apiPost("update",{ id: form.id.value, fields });
-      if(r.ok){ dlg.close(); load(); } else formMsg.textContent=r.error||"No se pudo guardar.";
-    };
-
-    document.getElementById("btnRefresh").onclick=load;
     if(guard()) load();
   </script>
 </body>
