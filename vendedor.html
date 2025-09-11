@@ -18,12 +18,12 @@
   </header>
 
   <main class="main-content">
-    <section class="dashboard-grid">
+    <section class="dashboard-grid" style="margin-bottom: 24px;">
         <div class="stat-card"><div class="stat-title">Órdenes en Producción</div><div class="stat-big" id="stat-prod">0</div></div>
         <div class="stat-card"><div class="stat-title">Órdenes Terminadas</div><div class="stat-big" id="stat-done">0</div></div>
         <div class="stat-card"><div class="stat-title">Órdenes Pendientes</div><div class="stat-big" id="stat-pending">0</div></div>
     </section>
-    <section class="card">
+    <section class="card" style="margin-bottom: 24px;">
       <div class="stat-title">Top 5 Clientes (por # de órdenes)</div>
       <table id="top-clients">
         <thead><tr><th>Cliente</th><th>Órdenes</th></tr></thead>
@@ -68,7 +68,8 @@
 
     function generateNavLinks(rol) {
       const container = document.getElementById('nav-links');
-      let links = <a href="https://forms.gle/ExmgYXjWDhFijNPq5" target="_blank" class="btn">Solicitar Cotización</a>;
+      // --- LINK DEL FORMULARIO ACTUALIZADO AQUÍ ---
+      let links = `<a href="https://forms.gle/ExmgYXjWDhFijNPq5" target="_blank" class="btn">Solicitar Cotización</a>`;
       links += `<button class="btn" id="btnRefresh">Actualizar</button>`;
       links += `<button class="btn primary" id="btnNew">Nueva orden</button>`;
       if (rol === 'ADMIN') {
@@ -82,7 +83,6 @@
       document.getElementById("btnNew").onclick=() => { document.getElementById("form").reset(); document.getElementById("formMsg").textContent=""; document.getElementById('dlg').showModal(); };
     }
     
-    // El resto del script...
     function apiJsonp(path, payload = {}) {
       return new Promise((resolve, reject) => {
         const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
@@ -94,11 +94,14 @@
         document.body.appendChild(script);
       });
     }
+
     const STATES=["SOLICITADA","APROBADA","EN_PRODUCCION","TERMINADA"];
     const cols={}, counts={};
     STATES.forEach(s=>{ cols[s]=document.getElementById("col-"+s); counts[s]=document.getElementById("count-"+s); });
     const msg=document.getElementById("msg");
+
     function cardTemplate(o){ return `<div class="kanban-card ${o.prioridad === 'URGENTE' ? 'urgent' : ''}" draggable="true" data-id="${o.id}"><div style="display:flex; justify-content:space-between;"><b>${o.codigo||""}</b><span class="pill">${o.prioridad||"NORMAL"}</span></div><div>${o.diseno||""} / ${o.prenda||""}</div><div class="muted">${o.cliente||""}</div></div>`; }
+    
     function setupDnD(){
       document.querySelectorAll(".kanban-card").forEach(c=> c.addEventListener("dragstart",e=> e.dataTransfer.setData("text/plain", c.dataset.id)));
       document.querySelectorAll(".dropzone").forEach(z=>{
@@ -113,6 +116,7 @@
         });
       });
     }
+
     function renderPersonalDash(orders) {
         document.getElementById('stat-prod').textContent = orders.filter(o => o.estado === 'EN_PRODUCCION').length;
         document.getElementById('stat-done').textContent = orders.filter(o => o.estado === 'TERMINADA').length;
@@ -123,6 +127,7 @@
         const tbody = document.querySelector("#top-clients tbody");
         tbody.innerHTML = topClients.length ? topClients.map(([name, count]) => `<tr><td>${name}</td><td>${count}</td></tr>`).join("") : '<tr><td colspan="2" class="muted">No hay datos de clientes.</td></tr>';
     }
+
     async function loadData(){
       msg.textContent="";
       STATES.forEach(s=>{ cols[s].innerHTML=""; counts[s].textContent="0"; });
@@ -139,6 +144,7 @@
         setupDnD();
       } catch (err) { msg.textContent="Error de red al cargar los datos."; }
     }
+
     async function saveOrder(e){
       const form=document.getElementById("form"), formMsg=document.getElementById("formMsg");
       e.preventDefault(); formMsg.textContent="";
@@ -150,6 +156,7 @@
         if(r.ok){ document.getElementById("dlg").close(); loadData(); } else formMsg.textContent=r.error||"No se pudo crear la orden.";
       } catch (err) { formMsg.textContent = "Error de red al crear la orden."}
     }
+
     document.addEventListener('DOMContentLoaded', () => {
         const user = checkAuth();
         if(user) {
@@ -161,5 +168,3 @@
   </script>
 </body>
 </html>
-
-
