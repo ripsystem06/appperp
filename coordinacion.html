@@ -68,7 +68,7 @@
   </dialog>
 
   <script>
-    const API_BASE = 'https://script.google.com/macros/s/AKfycbyJUhftgQni0-nKjA3of7bRxXBVvxk0ybc7lhyWEB5hLk1earvUNhwUY4179mvC3a2lDA/exec';
+    const API_BASE = 'https://script.google.com/macros/s/AKfycbzmonJNOP5QoXCNdoIoKMzFZNZV4Y7AhXHGILqZxx3AMpu9Ueno2U9uvjM1HCgRgfhMdw/exec';
     
     function guard(){ const s=localStorage.getItem("erp_rol"), e=localStorage.getItem("erp_email"); if(!s||!e){location.href="index.html";return null;} if(!["ADMIN","COORDINADOR"].includes(s)){location.href="dashboard.html";return null;} document.getElementById("who").textContent="— "+e+" ("+s+")"; return true; }
     
