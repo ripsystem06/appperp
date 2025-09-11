@@ -52,7 +52,6 @@
   </dialog>
 
   <script>
-    // URL de la API corregida
     const API_BASE = 'https://script.google.com/macros/s/AKfycbyJUhftgQni0-nKjA3of7bRxXBVvxk0ybc7lhyWEB5hLk1earvUNhwUY4179mvC3a2lDA/exec';
     
     function checkAuth(){
@@ -80,7 +79,8 @@
         window[callbackName] = function(data) { delete window[callbackName]; document.body.removeChild(script); resolve(data); };
         const script = document.createElement('script');
         const payloadStr = encodeURIComponent(JSON.stringify(payload));
-        script.src = `${API_BASE}?path=${path}&payload=${payloadStr}&callback=${callbackName}`;
+        const cacheBuster = `&_=${new Date().getTime()}`;
+        script.src = `${API_BASE}?path=${path}&payload=${payloadStr}&callback=${callbackName}${cacheBuster}`;
         script.onerror = () => { reject(new Error('JSONP request failed')); };
         document.body.appendChild(script);
       });
@@ -91,8 +91,18 @@
     STATES.forEach(s=>{ cols[s]=document.getElementById("col-"+s); counts[s]=document.getElementById("c-"+s);});
     const msg=document.getElementById("msg");
 
+    // --- FUNCIÓN ACTUALIZADA ---
     function cardTemplate(o){ 
       const fechaEst = (o.fechaEstimada || "").split('T')[0] || 'N/A';
+      
+      // Añadir información de métricas si existe
+      let metricInfo = '';
+      if (o.departamento === 'BORDADO' && o.puntadasReales > 0) {
+        metricInfo = `<div style="margin-top: 6px; padding: 4px 8px; background-color: #e0f2fe; color: #0c4a6e; border-radius: 6px; font-size: 12px; font-weight: 500;">Puntadas: <b>${o.puntadasReales.toLocaleString('es-MX')}</b></div>`;
+      } else if (o.departamento === 'DTF' && o.metrosReales > 0) {
+        metricInfo = `<div style="margin-top: 6px; padding: 4px 8px; background-color: #e7e5e4; color: #3f3f46; border-radius: 6px; font-size: 12px; font-weight: 500;">Metros: <b>${o.metrosReales.toFixed(2)}</b></div>`;
+      }
+
       return `<div class="kanban-card ${o.prioridad === 'URGENTE' ? 'urgent' : ''}" draggable="true" data-id="${o.id}">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <b>${o.codigo||""}</b>
@@ -101,6 +111,7 @@
         <div>${o.diseno||""} / ${o.prenda||""}</div>
         <div class="muted">${o.cliente||""}<br><small>${o.vendedorEmail||""}</small></div>
         <div class="muted" style="margin-top: 4px; font-weight: 600;">Fecha Est: ${fechaEst}</div>
+        ${metricInfo}
         <div style="margin-top:8px;">
           <button class="btn" data-edit="${o.id}" style="width:100%;">Editar</button>
         </div>
@@ -150,10 +161,7 @@
       const fechaEstimadaStr = (o.fechaEstimada || "").split('T')[0];
       const fechaCompromisoStr = (o.fechaCompromiso || "").split('T')[0];
       
-      // Mostrar la fecha estimada del vendedor
       document.getElementById("infoFechaEstimada").textContent = fechaEstimadaStr || 'No especificada';
-      
-      // Pre-llenar la fecha compromiso: si ya existe, usarla. Si no, usar la estimada como sugerencia.
       form.fechaCompromiso.value = fechaCompromisoStr || fechaEstimadaStr;
       
       form.prioridad.value=o.prioridad||"NORMAL"; 
